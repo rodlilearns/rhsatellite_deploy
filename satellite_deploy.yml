@@ -1,0 +1,17 @@
+---
+- name: Deploy Satellite on '{{ satellite_hosts }}'
+  hosts: satellite_hosts
+
+  vars_prompt:
+
+    - name: foreman-initial-admin-username
+      prompt: Enter the foreman initial admin username.
+      private: no
+
+    - name: foreman-initial-admin-password
+      prompt: Enter the foreman initial admin password.
+
+  roles:
+
+    - satellite_deploy
+    - satellite_configure

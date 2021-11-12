@@ -1,0 +1,6 @@
+---
+# handlers file for satellite_deploy
+- name: restart firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: restarted

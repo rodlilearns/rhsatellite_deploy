@@ -1,0 +1,108 @@
+---
+# tasks file for satellite_configure
+
+#   ____        _                   _       _   _               __  __             _  __           _    
+#  / ___| _   _| |__  ___  ___ _ __(_)_ __ | |_(_) ___  _ __   |  \/  | __ _ _ __ (_)/ _| ___  ___| |_  
+#  \___ \| | | | '_ \/ __|/ __| '__| | '_ \| __| |/ _ \| '_ \  | |\/| |/ _` | '_ \| | |_ / _ \/ __| __| 
+#   ___) | |_| | |_) \__ \ (__| |  | | |_) | |_| | (_) | | | | | |  | | (_| | | | | |  _|  __/\__ \ |_  
+#  |____/ \__,_|_.__/|___/\___|_|  |_| .__/ \__|_|\___/|_| |_| |_|  |_|\__,_|_| |_|_|_|  \___||___/\__| 
+#                                    |_|                                                                
+- name: Create the manifest
+  theforeman.foreman.redhat_manifest:
+    name: '{{ sat_config_manifest_name }}'
+    username: '{{ sat_username }}'
+    password: '{{ sat_password }}'
+    pool_id: '{{ sat_config_pool_id }}'
+    quantity: '{{ sat_config_quantity }}'
+
+- name: Ensure manifest has '{{ sat_config_quantity }}' subs, and export.
+  theforeman.foreman.redhat_manifest:
+    uuid: '{{ sat_config_uuid }}'
+    username: '{{ sat_username }}'
+    password: '{{ sat_password }}'
+    pool_id: '{{ sat_config_pool_id }}'
+    quantity: '{{ sat_config_quantity }}'
+    path: '{{ sat_config_manifest_path }}'
+
+- name: Upload subscription manifest
+  theforeman.foreman.subscription_manifest:
+    username: '{{ sat_username }}'
+    password: '{{ sat_password }}'
+    server_url: '{{ sat_server_url }}'
+    organization: '{{ sat_organization }}'
+    state: present
+    manifest_path: '{{ sat_config_manifest_path }}'
+
+#   ____          _   _   _       _     ____                      _ _             _           
+#  |  _ \ ___  __| | | | | | __ _| |_  |  _ \ ___ _ __   ___  ___(_) |_ ___  _ __(_) ___  ___ 
+#  | |_) / _ \/ _` | | |_| |/ _` | __| | |_) / _ \ '_ \ / _ \/ __| | __/ _ \| '__| |/ _ \/ __|
+#  |  _ <  __/ (_| | |  _  | (_| | |_  |  _ <  __/ |_) | (_) \__ \ | || (_) | |  | |  __/\__ \
+#  |_| \_\___|\__,_| |_| |_|\__,_|\__| |_| \_\___| .__/ \___/|___/_|\__\___/|_|  |_|\___||___/
+#                                                |_|                                          
+
+- name: Enable RHEL 8 BaseOS RPMs repository with label
+  theforeman.foreman.repository_set:
+      username: '{{ foreman-initial-admin-username }}'
+      password: '{{ foreman-initial-admin-password }}'
+      server_url: '{{ sat_server_url }}'
+      organization: '{{ sat_organization }}'
+      label: rhel-8-for-x86_64-baseos-rpms
+      repositories:
+        - releasever: '8'
+        - basearch: 'x86_64'
+      state: enabled
+
+- name: Enable RHEL 8 Appstream RPMs repository with label
+  theforeman.foreman.repository_set:
+      username: '{{ foreman-initial-admin-username }}'
+      password: '{{ foreman-initial-admin-password }}'
+      server_url: '{{ sat_server_url }}'
+      organization: '{{ sat_organization }}'
+      label: rhel-8-for-x86_64-appstream-rpms
+      repositories:
+        - releasever: '8'
+        - basearch: 'x86_64'
+      state: enabled
+
+#    ____            _             _    __     ___               
+#   / ___|___  _ __ | |_ ___ _ __ | |_  \ \   / (_) _____      __
+#  | |   / _ \| '_ \| __/ _ \ '_ \| __|  \ \ / /| |/ _ \ \ /\ / /
+#  | |__| (_) | | | | ||  __/ | | | |_    \ V / | |  __/\ V  V / 
+#   \____\___/|_| |_|\__\___|_| |_|\__|    \_/  |_|\___| \_/\_/  
+                                                               
+- name: Create content view
+  theforeman.foreman.content_view:
+    username: '{{ satellite_username }}'
+    password: '{{ satellite_password }}'
+    server_url: '{{ satellite_server_url }}'
+    name: '{{ content_view_name }}'
+    organization: '{{ satellite_organization }}'
+    repositories:
+      - name: '{{ }}'
+      - product: '{{ }}'
+
+#      _        _   _            _   _               _  __          
+#     / \   ___| |_(_)_   ____ _| |_(_) ___  _ __   | |/ /___ _   _ 
+#    / _ \ / __| __| \ \ / / _` | __| |/ _ \| '_ \  | ' // _ \ | | |
+#   / ___ \ (__| |_| |\ V / (_| | |_| | (_) | | | | | . \  __/ |_| |
+#  /_/   \_\___|\__|_| \_/ \__,_|\__|_|\___/|_| |_| |_|\_\___|\__, |
+#                                                             |___/                                                               
+
+- name: Create client activation key
+  theforeman.foreman.activation_key:
+    username: '{{ satellite_username }}'
+    password: '{{ satellite_password }}'
+    server_url: '{{ satellite_server_url }}'
+    name: '{{ activation_key_name }}'
+    organization: '{{ sat_organization }}'
+    lifecycle_environment: 'Library'
+    content_view: 'content_view_name }}'
+    host_collections:
+      - '{{ host_collection_rhel_8_servers }}'
+      - '{{ host_collection_rhel_8_production }}'
+    subscriptions:
+      - pool_id: '{{ pool_id }}'
+      - name: 'Red Hat Enterprise Linux'
+    auto_attach: False
+    release_version: 8Server
+    service_level: Standard
